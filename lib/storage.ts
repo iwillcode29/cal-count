@@ -7,16 +7,26 @@ export interface NutritionInfo {
   sodium: number;    // mg
 }
 
+export type MealType = "breakfast" | "lunch" | "dinner";
+
 export interface FoodEntry {
   id: string;
   name: string;
   calories: number;
   nutrition?: NutritionInfo;
   createdAt: string;
+  meal: MealType;
+}
+
+export interface MealData {
+  breakfast: FoodEntry[];
+  lunch: FoodEntry[];
+  dinner: FoodEntry[];
 }
 
 export interface DayData {
-  entries: FoodEntry[];
+  entries: FoodEntry[]; // Legacy support
+  meals: MealData;
   goal: number;
 }
 
@@ -47,44 +57,119 @@ export function setGoal(goal: number): void {
 
 export function getDayData(date: string): DayData {
   if (typeof window === "undefined") {
-    return { entries: [], goal: DEFAULT_GOAL };
+    return { 
+      entries: [], 
+      meals: { breakfast: [], lunch: [], dinner: [] },
+      goal: DEFAULT_GOAL 
+    };
   }
   const stored = localStorage.getItem(dayKey(date));
   const goal = getGoal();
-  if (!stored) return { entries: [], goal };
+  if (!stored) return { 
+    entries: [], 
+    meals: { breakfast: [], lunch: [], dinner: [] },
+    goal 
+  };
   try {
     const parsed = JSON.parse(stored);
-    return { entries: parsed.entries || [], goal };
+    // Handle legacy data structure
+    if (parsed.entries && !parsed.meals) {
+      // Migrate old data: put all entries in lunch by default
+      const meals: MealData = {
+        breakfast: [],
+        lunch: parsed.entries || [],
+        dinner: []
+      };
+      return { entries: parsed.entries || [], meals, goal };
+    }
+    return { 
+      entries: parsed.entries || [], 
+      meals: parsed.meals || { breakfast: [], lunch: [], dinner: [] },
+      goal 
+    };
   } catch {
-    return { entries: [], goal };
+    return { 
+      entries: [], 
+      meals: { breakfast: [], lunch: [], dinner: [] },
+      goal 
+    };
   }
 }
 
-function saveDayEntries(date: string, entries: FoodEntry[]): void {
-  localStorage.setItem(dayKey(date), JSON.stringify({ entries }));
+function saveDayData(date: string, meals: MealData): void {
+  // Also maintain entries array for legacy compatibility
+  const entries = [...meals.breakfast, ...meals.lunch, ...meals.dinner];
+  localStorage.setItem(dayKey(date), JSON.stringify({ entries, meals }));
 }
 
-export function addEntry(date: string, name: string, calories: number, nutrition?: NutritionInfo): FoodEntry {
+export function addEntry(date: string, name: string, calories: number, meal: MealType, nutrition?: NutritionInfo): FoodEntry {
   const data = getDayData(date);
   const entry: FoodEntry = {
     id: crypto.randomUUID(),
     name,
     calories,
+    meal,
     ...(nutrition && { nutrition }),
     createdAt: new Date().toISOString(),
   };
-  data.entries.unshift(entry);
-  saveDayEntries(date, data.entries);
+  data.meals[meal].unshift(entry);
+  saveDayData(date, data.meals);
   return entry;
 }
 
-export function deleteEntry(date: string, entryId: string): void {
+export function deleteEntry(date: string, entryId: string, meal: MealType): void {
   const data = getDayData(date);
-  data.entries = data.entries.filter((e) => e.id !== entryId);
-  saveDayEntries(date, data.entries);
+  data.meals[meal] = data.meals[meal].filter((e) => e.id !== entryId);
+  saveDayData(date, data.meals);
+}
+
+export function updateEntry(
+  date: string, 
+  entryId: string, 
+  currentMeal: MealType, 
+  updates: { name?: string; calories?: number; nutrition?: NutritionInfo; newMeal?: MealType }
+): { entry: FoodEntry; oldMeal: MealType; newMeal: MealType } | null {
+  const data = getDayData(date);
+  const entryIndex = data.meals[currentMeal].findIndex((e) => e.id === entryId);
+  
+  if (entryIndex === -1) return null;
+  
+  const entry = data.meals[currentMeal][entryIndex];
+  const newMeal = updates.newMeal ?? currentMeal;
+  
+  const updatedEntry: FoodEntry = {
+    ...entry,
+    ...(updates.name !== undefined && { name: updates.name }),
+    ...(updates.calories !== undefined && { calories: updates.calories }),
+    ...(updates.nutrition !== undefined && { nutrition: updates.nutrition }),
+    meal: newMeal,
+  };
+  
+  // If meal changed, move entry to new meal
+  if (newMeal !== currentMeal) {
+    // Remove from current meal
+    data.meals[currentMeal].splice(entryIndex, 1);
+    // Add to new meal
+    data.meals[newMeal].unshift(updatedEntry);
+  } else {
+    // Just update in place
+    data.meals[currentMeal][entryIndex] = updatedEntry;
+  }
+  
+  saveDayData(date, data.meals);
+  
+  return { entry: updatedEntry, oldMeal: currentMeal, newMeal };
+}
+
+export function getAllEntries(meals: MealData): FoodEntry[] {
+  return [...meals.breakfast, ...meals.lunch, ...meals.dinner];
 }
 
 export function getTotalCalories(entries: FoodEntry[]): number {
+  return entries.reduce((sum, e) => sum + e.calories, 0);
+}
+
+export function getMealCalories(entries: FoodEntry[]): number {
   return entries.reduce((sum, e) => sum + e.calories, 0);
 }
 
@@ -132,7 +217,10 @@ export function getDaysWithData(limit = 30): string[] {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        if (parsed.entries && parsed.entries.length > 0) {
+        const hasData = parsed.meals 
+          ? (parsed.meals.breakfast?.length > 0 || parsed.meals.lunch?.length > 0 || parsed.meals.dinner?.length > 0)
+          : (parsed.entries && parsed.entries.length > 0);
+        if (hasData) {
           days.push(date);
         }
       } catch {
@@ -144,27 +232,95 @@ export function getDaysWithData(limit = 30): string[] {
 }
 
 // InBody Analysis Storage
+export interface SegmentRating {
+  mass: number;
+  percent: number;
+  rating: "under" | "normal" | "over";
+}
+
+export interface MuscleFatItem {
+  value: number;
+  rating: "under" | "normal" | "over";
+}
+
+export interface InBodyAnalysisData {
+  // Basic
+  testDate?: string | null;
+  height?: number | null;
+  age?: number | null;
+  gender?: "male" | "female" | null;
+  weight: number;
+  skeletalMuscleMass: number;
+  bodyFatMass: number;
+  bmi: number;
+  inbodyScore: number;
+  bodyWater: number;
+  protein: number;
+  minerals: number;
+  bodyFatPercentage: number;
+
+  // Muscle-Fat Analysis
+  muscleFatAnalysis?: {
+    weight: MuscleFatItem;
+    smm: MuscleFatItem;
+    bodyFat: MuscleFatItem;
+  };
+
+  // Segmental Analysis
+  segmentalLean?: {
+    rightArm: SegmentRating;
+    leftArm: SegmentRating;
+    trunk: SegmentRating;
+    rightLeg: SegmentRating;
+    leftLeg: SegmentRating;
+  };
+  segmentalFat?: {
+    rightArm: SegmentRating;
+    leftArm: SegmentRating;
+    trunk: SegmentRating;
+    rightLeg: SegmentRating;
+    leftLeg: SegmentRating;
+  };
+
+  // Weight Control
+  weightControl?: {
+    targetWeight: number;
+    weightControl: number;
+    fatControl: number;
+    muscleControl: number;
+  };
+
+  // Advanced metrics
+  waistHipRatio?: number | null;
+  visceralFatLevel?: number | null;
+  bmr?: number | null;
+  fatFreeMass?: number | null;
+  obesityDegree?: number | null;
+  smi?: number | null;
+
+  // Macros
+  macros: {
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+
+  // AI Analysis (Thai)
+  recommendations: string;
+  healthSummary?: string;
+  strengths?: string[];
+  improvements?: string[];
+  healthRisks?: string[];
+  exercisePlan?: string;
+  shortTermGoals?: string[];
+  longTermGoals?: string[];
+}
+
 export interface InBodyAnalysis {
   id: string;
   uploadedAt: string;
   recommendedCalories: number;
-  analysis: {
-    weight: number;
-    skeletalMuscleMass: number;
-    bodyFatMass: number;
-    bmi: number;
-    inbodyScore: number;
-    bodyWater: number;
-    protein: number;
-    minerals: number;
-    bodyFatPercentage: number;
-    macros: {
-      protein: number;
-      carbs: number;
-      fat: number;
-    };
-    recommendations: string;
-  };
+  analysis: InBodyAnalysisData;
 }
 
 const INBODY_KEY = "calcount_inbody_history";

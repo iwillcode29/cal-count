@@ -6,6 +6,7 @@ import type { FoodEntry } from "@/lib/storage";
 interface FoodItemProps {
   entry: FoodEntry;
   onDelete: (id: string) => void;
+  onEdit: (id: string) => void;
   goal: number;
   index: number;
 }
@@ -19,7 +20,7 @@ const MACRO_CONFIG = [
   { key: "sodium" as const, label: "โซเดียม", color: "#5B8EC9", bg: "rgba(91,142,201,0.12)", unit: "mg", daily: 2300 },
 ];
 
-export default function FoodItem({ entry, onDelete, goal, index }: FoodItemProps) {
+export default function FoodItem({ entry, onDelete, onEdit, goal, index }: FoodItemProps) {
   const [deleting, setDeleting] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
@@ -27,6 +28,11 @@ export default function FoodItem({ entry, onDelete, goal, index }: FoodItemProps
     e.stopPropagation();
     setDeleting(true);
     setTimeout(() => onDelete(entry.id), 280);
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit(entry.id);
   };
 
   const percentage = Math.round((entry.calories / goal) * 100);
@@ -57,10 +63,19 @@ export default function FoodItem({ entry, onDelete, goal, index }: FoodItemProps
             <p className="text-sm font-medium text-text truncate">{entry.name}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <span className="font-number text-sm font-bold text-ember">
             {entry.calories}
           </span>
+          <button
+            onClick={handleEdit}
+            className="w-7 h-7 flex items-center justify-center rounded-full text-text-muted hover:bg-sky-500/10 hover:text-sky-400 transition-all"
+            aria-label="แก้ไข"
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M8.5 1.5l2 2-6 6H2.5v-2l6-6z" />
+            </svg>
+          </button>
           <button
             onClick={handleDelete}
             className="w-7 h-7 flex items-center justify-center rounded-full text-text-muted hover:bg-danger/10 hover:text-danger transition-all"

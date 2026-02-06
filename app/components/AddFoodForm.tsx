@@ -1,14 +1,15 @@
 "use client";
 
 import { useState, useRef } from "react";
-import type { NutritionInfo } from "@/lib/storage";
+import type { NutritionInfo, MealType } from "@/lib/storage";
 
 interface AddFoodFormProps {
-  onAdd: (name: string, calories: number, nutrition?: NutritionInfo) => void;
+  onAdd: (name: string, calories: number, meal: MealType, nutrition?: NutritionInfo) => void;
 }
 
 export default function AddFoodForm({ onAdd }: AddFoodFormProps) {
   const [name, setName] = useState("");
+  const [meal, setMeal] = useState<MealType>("lunch");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const nameRef = useRef<HTMLInputElement>(null);
@@ -33,7 +34,7 @@ export default function AddFoodForm({ onAdd }: AddFoodFormProps) {
       }
 
       const data = await res.json();
-      onAdd(name.trim(), data.calories, data.nutrition);
+      onAdd(name.trim(), data.calories, meal, data.nutrition);
       setName("");
       nameRef.current?.focus();
     } catch (err) {
@@ -43,9 +44,25 @@ export default function AddFoodForm({ onAdd }: AddFoodFormProps) {
     }
   };
 
+  const mealLabels = {
+    breakfast: "เช้า",
+    lunch: "กลางวัน",
+    dinner: "เย็น"
+  };
+
   return (
     <div>
       <form onSubmit={handleSubmit} className="flex gap-2">
+        <select
+          value={meal}
+          onChange={(e) => setMeal(e.target.value as MealType)}
+          disabled={loading}
+          className="px-3 py-3 bg-surface border border-glass-border rounded-2xl text-sm text-text focus:outline-none focus:border-ember/40 focus:shadow-[0_0_0_3px_rgba(212,114,92,0.08)] transition-all disabled:opacity-50 shrink-0"
+        >
+          <option value="breakfast">🌅 {mealLabels.breakfast}</option>
+          <option value="lunch">☀️ {mealLabels.lunch}</option>
+          <option value="dinner">🌙 {mealLabels.dinner}</option>
+        </select>
         <input
           ref={nameRef}
           type="text"

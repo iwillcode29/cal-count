@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import CalorieRing from "./CalorieRing";
 import { formatThaiDate, getToday, type NutritionInfo } from "@/lib/storage";
 
@@ -8,6 +9,7 @@ interface DaySummaryProps {
   totalCalories: number;
   totalNutrition: NutritionInfo | null;
   goal: number;
+  entriesCount: number;
   onPrevDay: () => void;
   onNextDay: () => void;
   onGoalClick: () => void;
@@ -18,19 +20,32 @@ export default function DaySummary({
   totalCalories,
   totalNutrition,
   goal,
+  entriesCount,
   onPrevDay,
   onNextDay,
   onGoalClick,
 }: DaySummaryProps) {
   const isToday = date === getToday();
+  const progressPercent = Math.round((totalCalories / goal) * 100);
+  const remaining = goal - totalCalories;
 
   return (
     <div className="flex flex-col items-center pt-10 pb-8 animate-fade-in">
-      {/* App title */}
-      <div className="mb-6">
+      {/* App title + InBody link */}
+      <div className="mb-6 flex items-center gap-3">
         <h1 className="text-xs font-bold tracking-[0.3em] uppercase text-text-muted">
           Cal Count
         </h1>
+        <span className="text-text-muted/30">|</span>
+        <Link
+          href="/inbody"
+          className="text-[11px] font-semibold text-ember hover:text-ember-dim transition-colors tracking-wide flex items-center gap-1.5"
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="opacity-70">
+            <path d="M6 1v10M3 4h6M4 7h4" />
+          </svg>
+          InBody
+        </Link>
       </div>
 
       {/* Date navigation */}
@@ -72,6 +87,79 @@ export default function DaySummary({
           ✎
         </span>
       </button>
+
+      {/* Stats Cards */}
+      <div className="mt-6 grid grid-cols-3 gap-3 w-full max-w-sm px-4">
+        {/* Meals Count */}
+        {/* <div className="glass-card p-3 flex flex-col items-center justify-center">
+          <div className="text-xl font-bold font-number text-text">
+            {entriesCount}
+          </div>
+          <div className="text-[10px] text-text-muted mt-1 tracking-wide">
+            มื้อ
+          </div>
+        </div> */}
+
+        {/* Progress Percentage */}
+        {/* <div className="glass-card p-3 flex flex-col items-center justify-center">
+          <div className={`text-xl font-bold font-number ${
+            progressPercent >= 100 
+              ? progressPercent > 110 
+                ? "text-orange-400" 
+                : "text-emerald-400"
+              : "text-text"
+          }`}>
+            {progressPercent}%
+          </div>
+          <div className="text-[10px] text-text-muted mt-1 tracking-wide">
+            ความสำเร็จ
+          </div>
+        </div> */}
+
+        {/* Remaining/Excess */}
+        {/* <div className="glass-card p-3 flex flex-col items-center justify-center">
+          <div className={`text-xl font-bold font-number ${
+            remaining < 0 ? "text-orange-400" : "text-text"
+          }`}>
+            {remaining < 0 ? "+" : ""}{Math.abs(remaining)}
+          </div>
+          <div className="text-[10px] text-text-muted mt-1 tracking-wide">
+            {remaining >= 0 ? "เหลือ" : "เกิน"}
+          </div>
+        </div> */}
+
+        {/* Macros Summary */}
+        {/* {totalNutrition && (
+          <>
+            <div className="glass-card p-3 flex flex-col items-center justify-center">
+              <div className="text-lg font-bold font-number text-sky-400">
+                {Math.round(totalNutrition.protein)}
+              </div>
+              <div className="text-[10px] text-text-muted mt-1 tracking-wide">
+                โปรตีน (g)
+              </div>
+            </div>
+
+            <div className="glass-card p-3 flex flex-col items-center justify-center">
+              <div className="text-lg font-bold font-number text-amber-400">
+                {Math.round(totalNutrition.carbs)}
+              </div>
+              <div className="text-[10px] text-text-muted mt-1 tracking-wide">
+                คาร์บ (g)
+              </div>
+            </div>
+
+            <div className="glass-card p-3 flex flex-col items-center justify-center">
+              <div className="text-lg font-bold font-number text-rose-400">
+                {Math.round(totalNutrition.fat)}
+              </div>
+              <div className="text-[10px] text-text-muted mt-1 tracking-wide">
+                ไขมัน (g)
+              </div>
+            </div>
+          </>
+        )} */}
+      </div>
     </div>
   );
 }

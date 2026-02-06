@@ -29,28 +29,42 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: "system",
-          content: `You are an expert nutritionist and fitness advisor specializing in Thai people. Analyze the InBody report image and provide personalized dietary recommendations.
+          content: `You are an expert body composition analyst, nutritionist, and fitness advisor specializing in Thai people. You are analyzing an InBody body composition report.
 
-Extract ALL visible data from the InBody report including:
-- Weight (kg)
-- Skeletal Muscle Mass (kg)
-- Body Fat Mass (kg)
-- BMI
-- InBody Score
-- Body Water (L)
-- Protein (kg)
-- Minerals (kg)
-- Body Fat Percentage (%)
+Extract ALL visible data from the InBody report as thoroughly as possible. Read every section carefully.
 
-Then provide:
-1. Recommended daily calorie intake based on their body composition
-2. Detailed macronutrient breakdown (protein/carbs/fat in grams)
-3. Personalized advice in Thai language
+Required sections to extract:
+1. **Basic Info**: Height, Weight, Age, Gender, Test Date, InBody Score
+2. **Body Composition Analysis**: Total Body Water, Protein, Minerals, Body Fat Mass, Weight
+3. **Muscle-Fat Analysis**: Weight (with bar position), SMM (with bar position), Body Fat Mass (with bar position). Bar positions indicate Under/Normal/Over.
+4. **Obesity Analysis**: BMI (value + bar position), PBF/Body Fat Percentage (value + bar position)
+5. **Segmental Lean Analysis**: Right Arm, Left Arm, Trunk, Right Leg, Left Leg — each with mass (kg), percentage (%), and rating (Under/Normal/Over)
+6. **Segmental Fat Analysis**: Right Arm, Left Arm, Trunk, Right Leg, Left Leg — each with mass (kg), percentage (%), and rating (Under/Normal/Over)
+7. **Weight Control**: Target Weight, Weight Control, Fat Control, Muscle Control
+8. **Obesity Evaluation**: BMI rating, PBF rating
+9. **Waist-Hip Ratio**: value
+10. **Visceral Fat Level**: value
+11. **Research Parameters**: Fat Free Mass, Basal Metabolic Rate (BMR), Obesity Degree, SMI, Recommended Calorie Intake
+12. **Body Composition History**: If visible, extract past measurements (weight, SMM, PBF over time)
+
+Then provide a comprehensive analysis in Thai:
+- สรุปสุขภาพโดยรวม (Overall health summary)
+- จุดแข็งของร่างกาย (Body strengths)
+- จุดที่ต้องปรับปรุง (Areas to improve)  
+- ความเสี่ยงด้านสุขภาพ (Health risks based on visceral fat, waist-hip ratio, etc.)
+- แผนโภชนาการแนะนำ (Nutrition plan) - calories + macro breakdown with reasoning
+- แผนออกกำลังกายแนะนำ (Exercise plan) - specific to their body composition
+- เป้าหมายระยะสั้น 1-3 เดือน (Short-term goals)
+- เป้าหมายระยะยาว 6-12 เดือน (Long-term goals)
 
 Respond ONLY with valid JSON in this exact format:
 {
   "recommendedCalories": number,
   "analysis": {
+    "testDate": "string or null",
+    "height": number_or_null,
+    "age": number_or_null,
+    "gender": "male" | "female" | null,
     "weight": number,
     "skeletalMuscleMass": number,
     "bodyFatMass": number,
@@ -60,21 +74,61 @@ Respond ONLY with valid JSON in this exact format:
     "protein": number,
     "minerals": number,
     "bodyFatPercentage": number,
+    "muscleFatAnalysis": {
+      "weight": { "value": number, "rating": "under" | "normal" | "over" },
+      "smm": { "value": number, "rating": "under" | "normal" | "over" },
+      "bodyFat": { "value": number, "rating": "under" | "normal" | "over" }
+    },
+    "segmentalLean": {
+      "rightArm": { "mass": number, "percent": number, "rating": "under" | "normal" | "over" },
+      "leftArm": { "mass": number, "percent": number, "rating": "under" | "normal" | "over" },
+      "trunk": { "mass": number, "percent": number, "rating": "under" | "normal" | "over" },
+      "rightLeg": { "mass": number, "percent": number, "rating": "under" | "normal" | "over" },
+      "leftLeg": { "mass": number, "percent": number, "rating": "under" | "normal" | "over" }
+    },
+    "segmentalFat": {
+      "rightArm": { "mass": number, "percent": number, "rating": "under" | "normal" | "over" },
+      "leftArm": { "mass": number, "percent": number, "rating": "under" | "normal" | "over" },
+      "trunk": { "mass": number, "percent": number, "rating": "under" | "normal" | "over" },
+      "rightLeg": { "mass": number, "percent": number, "rating": "under" | "normal" | "over" },
+      "leftLeg": { "mass": number, "percent": number, "rating": "under" | "normal" | "over" }
+    },
+    "weightControl": {
+      "targetWeight": number,
+      "weightControl": number,
+      "fatControl": number,
+      "muscleControl": number
+    },
+    "waistHipRatio": number_or_null,
+    "visceralFatLevel": number_or_null,
+    "bmr": number_or_null,
+    "fatFreeMass": number_or_null,
+    "obesityDegree": number_or_null,
+    "smi": number_or_null,
     "macros": {
       "protein": number,
       "carbs": number,
       "fat": number
     },
-    "recommendations": "string in Thai"
+    "recommendations": "string in Thai - comprehensive recommendations",
+    "healthSummary": "string in Thai - overall health summary",
+    "strengths": ["array of strings in Thai - body strengths"],
+    "improvements": ["array of strings in Thai - areas to improve"],
+    "healthRisks": ["array of strings in Thai - health risk warnings"],
+    "exercisePlan": "string in Thai - recommended exercise plan",
+    "shortTermGoals": ["array of strings in Thai - 1-3 month goals"],
+    "longTermGoals": ["array of strings in Thai - 6-12 month goals"]
   }
-}`,
+}
+
+Important: If a value is not visible or readable from the report, use null for optional fields. Never make up data - only extract what's actually visible.`,
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: "Please analyze this InBody report and provide detailed nutritional recommendations in Thai.",
+              text: "Please analyze this InBody report thoroughly. Extract ALL visible data and provide comprehensive health analysis and recommendations in Thai.",
             },
             {
               type: "image_url",
@@ -85,7 +139,7 @@ Respond ONLY with valid JSON in this exact format:
           ],
         },
       ],
-      max_tokens: 1500,
+      max_tokens: 4000,
       temperature: 0.3,
     });
 

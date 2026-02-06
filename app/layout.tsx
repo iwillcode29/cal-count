@@ -31,7 +31,7 @@ export default function RootLayout({
       <body
         className={`${chakraPetch.variable} ${spaceMono.variable} font-[family-name:var(--font-thai)] antialiased`}
       >
-        <main className="min-h-dvh max-w-md mx-auto px-4 pb-8">
+        <main className="min-h-dvh sm:max-w-md lg:max-w-[1280px] mx-auto px-4 pb-8">
           {children}
         </main>
       </body>

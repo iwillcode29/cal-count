@@ -1,6 +1,6 @@
 "use client";
 
-import { getDaysWithData, getDayData, getTotalCalories, formatThaiDate, getGoal } from "@/lib/storage";
+import { getDaysWithData, getDayData, getTotalCalories, formatThaiDate, getGoal, getAllEntries } from "@/lib/storage";
 
 interface HistoryViewProps {
   onSelectDay: (date: string) => void;
@@ -36,7 +36,8 @@ export default function HistoryView({ onSelectDay, onClose }: HistoryViewProps) 
           <div className="flex flex-col gap-2">
             {days.map((date, i) => {
               const data = getDayData(date);
-              const total = getTotalCalories(data.entries);
+              const allEntries = getAllEntries(data.meals);
+              const total = getTotalCalories(allEntries);
               const progress = Math.min(total / goal, 1);
               const isOver = total > goal;
               return (
@@ -48,7 +49,7 @@ export default function HistoryView({ onSelectDay, onClose }: HistoryViewProps) 
                 >
                   <div>
                     <p className="text-sm font-medium">{formatThaiDate(date)}</p>
-                    <p className="text-[11px] text-text-muted font-number">{data.entries.length} รายการ</p>
+                    <p className="text-[11px] text-text-muted font-number">{allEntries.length} รายการ</p>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-16 h-1.5 bg-surface-lighter rounded-full overflow-hidden">

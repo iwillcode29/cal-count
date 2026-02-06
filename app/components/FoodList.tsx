@@ -6,10 +6,11 @@ import FoodItem from "./FoodItem";
 interface FoodListProps {
   entries: FoodEntry[];
   onDelete: (id: string) => void;
+  onEdit: (id: string) => void;
   goal: number;
 }
 
-export default function FoodList({ entries, onDelete, goal }: FoodListProps) {
+export default function FoodList({ entries, onDelete, onEdit, goal }: FoodListProps) {
   if (entries.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-text-muted">
@@ -28,7 +29,7 @@ export default function FoodList({ entries, onDelete, goal }: FoodListProps) {
   return (
     <div className="flex flex-col gap-2">
       {entries.map((entry, index) => (
-        <FoodItem key={entry.id} entry={entry} onDelete={onDelete} goal={goal} index={index} />
+        <FoodItem key={entry.id} entry={entry} onDelete={onDelete} onEdit={onEdit} goal={goal} index={index} />
       ))}
     </div>
   );
