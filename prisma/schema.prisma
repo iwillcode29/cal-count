@@ -1,0 +1,134 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Food Entry Model
+model FoodEntry {
+  id        String   @id @default(uuid())
+  name      String
+  calories  Int
+  meal      String   // breakfast, lunch, dinner
+  date      String   // YYYY-MM-DD format
+  createdAt DateTime @default(now())
+  
+  // Nutrition Info (optional)
+  protein   Float?
+  carbs     Float?
+  fat       Float?
+  fiber     Float?
+  sugar     Float?
+  sodium    Float?
+  
+  @@index([date])
+  @@index([date, meal])
+}
+
+// User Settings Model
+model UserSettings {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+// InBody Analysis Model
+model InBodyAnalysis {
+  id                    String   @id @default(uuid())
+  uploadedAt            DateTime @default(now())
+  recommendedCalories   Int
+  
+  // Basic Info
+  testDate              String?
+  height                Float?
+  age                   Int?
+  gender                String?  // male, female
+  weight                Float
+  skeletalMuscleMass    Float
+  bodyFatMass           Float
+  bmi                   Float
+  inbodyScore           Int
+  bodyWater             Float
+  protein               Float
+  minerals              Float
+  bodyFatPercentage     Float
+  
+  // Muscle-Fat Analysis
+  weightValue           Float?
+  weightRating          String?
+  smmValue              Float?
+  smmRating             String?
+  bodyFatValue          Float?
+  bodyFatRating         String?
+  
+  // Segmental Lean Mass
+  segLeanRightArmMass   Float?
+  segLeanRightArmPct    Float?
+  segLeanRightArmRate   String?
+  segLeanLeftArmMass    Float?
+  segLeanLeftArmPct     Float?
+  segLeanLeftArmRate    String?
+  segLeanTrunkMass      Float?
+  segLeanTrunkPct       Float?
+  segLeanTrunkRate      String?
+  segLeanRightLegMass   Float?
+  segLeanRightLegPct    Float?
+  segLeanRightLegRate   String?
+  segLeanLeftLegMass    Float?
+  segLeanLeftLegPct     Float?
+  segLeanLeftLegRate    String?
+  
+  // Segmental Fat Mass
+  segFatRightArmMass    Float?
+  segFatRightArmPct     Float?
+  segFatRightArmRate    String?
+  segFatLeftArmMass     Float?
+  segFatLeftArmPct      Float?
+  segFatLeftArmRate     String?
+  segFatTrunkMass       Float?
+  segFatTrunkPct        Float?
+  segFatTrunkRate       String?
+  segFatRightLegMass    Float?
+  segFatRightLegPct     Float?
+  segFatRightLegRate    String?
+  segFatLeftLegMass     Float?
+  segFatLeftLegPct      Float?
+  segFatLeftLegRate     String?
+  
+  // Weight Control
+  targetWeight          Float?
+  weightControl         Float?
+  fatControl            Float?
+  muscleControl         Float?
+  
+  // Advanced Metrics
+  waistHipRatio         Float?
+  visceralFatLevel      Float?
+  bmr                   Float?
+  fatFreeMass           Float?
+  obesityDegree         Float?
+  smi                   Float?
+  
+  // Macros
+  macroProtein          Float
+  macroCarbs            Float
+  macroFat              Float
+  
+  // AI Analysis
+  recommendations       String
+  healthSummary         String?
+  strengths             String?  // JSON array
+  improvements          String?  // JSON array
+  healthRisks           String?  // JSON array
+  exercisePlan          String?
+  shortTermGoals        String?  // JSON array
+  longTermGoals         String?  // JSON array
+  
+  @@index([uploadedAt])
+}

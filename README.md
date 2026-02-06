@@ -42,7 +42,20 @@ OPENAI_API_KEY=sk-your-actual-api-key-here
 **หมายเหตุ:** ต้องมี OpenAI API key เพื่อใช้ฟีเจอร์วิเคราะห์ InBody  
 สมัครได้ที่: https://platform.openai.com/api-keys
 
-### 3. รันโปรเจกต์
+### 3. ตั้งค่า Database
+
+```bash
+# Generate Prisma Client
+npm run prisma:generate
+
+# Run database migration
+npm run prisma:migrate
+
+# (Optional) Open Prisma Studio to view/edit database
+npm run prisma:studio
+```
+
+### 4. รันโปรเจกต์
 
 ```bash
 npm run dev
@@ -67,11 +80,12 @@ npm run dev
 
 ## 🛠 Tech Stack
 
-- **Next.js 15** - React Framework
+- **Next.js 16** - React Framework
 - **TypeScript** - Type Safety
 - **Tailwind CSS** - Styling
 - **OpenAI GPT-4o Vision** - InBody Analysis
-- **localStorage** - Data Storage
+- **Prisma + SQLite** - Database (NEW! 🎉)
+- ~~localStorage~~ - Migrated to Database
 
 ## 📱 การใช้งาน
 
@@ -99,9 +113,14 @@ npm run dev
 
 ## 🔐 ความเป็นส่วนตัว
 
-- ข้อมูลทั้งหมดเก็บใน browser ของคุณ (localStorage)
-- ไม่มีการส่งข้อมูลไปเซิร์ฟเวอร์ (ยกเว้น API OpenAI สำหรับวิเคราะห์ InBody)
+- ข้อมูลทั้งหมดเก็บใน SQLite database ที่เครื่องคุณ (`prisma/dev.db`)
+- ไม่มีการส่งข้อมูลไปเซิร์ฟเวอร์ภายนอก (ยกเว้น API OpenAI สำหรับวิเคราะห์ InBody)
 - ไม่ต้องสมัครสมาชิกหรือเข้าสู่ระบบ
+
+## 📦 Database Migration
+
+อัปเกรดจาก localStorage เป็น Database แล้ว! ดูวิธีการ migrate ข้อมูลได้ที่:
+- [PRISMA_MIGRATION_GUIDE.md](./PRISMA_MIGRATION_GUIDE.md)
 
 ## 💰 ค่าใช้จ่าย InBody Analysis
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getInBodyHistory, deleteInBodyAnalysis, type InBodyAnalysis } from "@/lib/storage";
+import { getInBodyHistory, deleteInBodyAnalysis, type InBodyAnalysis } from "@/lib/storageDb";
 
 interface InBodyHistoryProps {
   onClose: () => void;
@@ -11,17 +11,35 @@ interface InBodyHistoryProps {
 export default function InBodyHistory({ onClose, onApplyAnalysis }: InBodyHistoryProps) {
   const [history, setHistory] = useState<InBodyAnalysis[]>([]);
   const [selectedAnalysis, setSelectedAnalysis] = useState<InBodyAnalysis | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setHistory(getInBodyHistory());
+    const loadHistory = async () => {
+      setLoading(true);
+      try {
+        const data = await getInBodyHistory();
+        setHistory(data);
+      } catch (error) {
+        console.error("Error loading InBody history:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadHistory();
   }, []);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm("ต้องการลบข้อมูล InBody นี้ใช่หรือไม่?")) {
-      deleteInBodyAnalysis(id);
-      setHistory(getInBodyHistory());
-      if (selectedAnalysis?.id === id) {
-        setSelectedAnalysis(null);
+      try {
+        await deleteInBodyAnalysis(id);
+        const updatedHistory = await getInBodyHistory();
+        setHistory(updatedHistory);
+        if (selectedAnalysis?.id === id) {
+          setSelectedAnalysis(null);
+        }
+      } catch (error) {
+        console.error("Error deleting InBody analysis:", error);
+        alert("เกิดข้อผิดพลาดในการลบข้อมูล");
       }
     }
   };
@@ -172,7 +190,11 @@ export default function InBodyHistory({ onClose, onApplyAnalysis }: InBodyHistor
         </div>
 
         <div className="space-y-2">
-          {history.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="w-6 h-6 border-2 border-ember/30 border-t-ember rounded-full animate-spin" />
+            </div>
+          ) : history.length === 0 ? (
             <div className="glass-card rounded-2xl p-8 text-center">
               <div className="w-12 h-12 rounded-full glass-card flex items-center justify-center mx-auto mb-3">
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-text-muted">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { saveInBodyAnalysis } from "@/lib/storage";
+import { saveInBodyAnalysis } from "@/lib/storageDb";
 
 interface InBodyAnalysis {
   weight: number;
@@ -67,7 +67,7 @@ export default function InBodyUpload({ onAnalysisComplete, onClose }: InBodyUplo
       const result: ApiResponse = await response.json();
       setAnalysis(result);
 
-      saveInBodyAnalysis({
+      await saveInBodyAnalysis({
         recommendedCalories: result.recommendedCalories,
         analysis: result.analysis,
       });

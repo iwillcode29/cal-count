@@ -1,15 +1,53 @@
 "use client";
 
-import { getDaysWithData, getDayData, getTotalCalories, formatThaiDate, getGoal, getAllEntries } from "@/lib/storage";
+import { useState, useEffect } from "react";
+import { getDaysWithData, getDayData, getTotalCalories, formatThaiDate, getGoal, getAllEntries } from "@/lib/storageDb";
 
 interface HistoryViewProps {
   onSelectDay: (date: string) => void;
   onClose: () => void;
 }
 
+interface DayInfo {
+  date: string;
+  total: number;
+  entriesCount: number;
+}
+
 export default function HistoryView({ onSelectDay, onClose }: HistoryViewProps) {
-  const days = getDaysWithData(60);
-  const goal = getGoal();
+  const [days, setDays] = useState<DayInfo[]>([]);
+  const [goal, setGoal] = useState(2000);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadHistory = async () => {
+      setLoading(true);
+      try {
+        const [daysData, goalValue] = await Promise.all([
+          getDaysWithData(60),
+          getGoal(),
+        ]);
+
+        const daysInfo = await Promise.all(
+          daysData.map(async (date) => {
+            const data = await getDayData(date);
+            const allEntries = getAllEntries(data.meals);
+            const total = getTotalCalories(allEntries);
+            return { date, total, entriesCount: allEntries.length };
+          })
+        );
+
+        setDays(daysInfo);
+        setGoal(goalValue);
+      } catch (error) {
+        console.error("Error loading history:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadHistory();
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col" onClick={onClose}>
@@ -30,26 +68,27 @@ export default function HistoryView({ onSelectDay, onClose }: HistoryViewProps) 
           </button>
         </div>
 
-        {days.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="w-6 h-6 border-2 border-ember/30 border-t-ember rounded-full animate-spin" />
+          </div>
+        ) : days.length === 0 ? (
           <p className="text-sm text-text-muted text-center py-8">ยังไม่มีประวัติ</p>
         ) : (
           <div className="flex flex-col gap-2">
-            {days.map((date, i) => {
-              const data = getDayData(date);
-              const allEntries = getAllEntries(data.meals);
-              const total = getTotalCalories(allEntries);
-              const progress = Math.min(total / goal, 1);
-              const isOver = total > goal;
+            {days.map((dayInfo, i) => {
+              const progress = Math.min(dayInfo.total / goal, 1);
+              const isOver = dayInfo.total > goal;
               return (
                 <button
-                  key={date}
-                  onClick={() => onSelectDay(date)}
+                  key={dayInfo.date}
+                  onClick={() => onSelectDay(dayInfo.date)}
                   className="flex items-center justify-between py-3.5 px-4 glass-card rounded-2xl text-left animate-slide-in"
                   style={{ animationDelay: `${i * 30}ms`, animationFillMode: "backwards" }}
                 >
                   <div>
-                    <p className="text-sm font-medium">{formatThaiDate(date)}</p>
-                    <p className="text-[11px] text-text-muted font-number">{allEntries.length} รายการ</p>
+                    <p className="text-sm font-medium">{formatThaiDate(dayInfo.date)}</p>
+                    <p className="text-[11px] text-text-muted font-number">{dayInfo.entriesCount} รายการ</p>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-16 h-1.5 bg-surface-lighter rounded-full overflow-hidden">
@@ -62,7 +101,7 @@ export default function HistoryView({ onSelectDay, onClose }: HistoryViewProps) 
                       />
                     </div>
                     <span className={`font-number text-sm font-bold w-14 text-right ${isOver ? "text-danger" : "text-mint"}`}>
-                      {total.toLocaleString()}
+                      {dayInfo.total.toLocaleString()}
                     </span>
                   </div>
                 </button>

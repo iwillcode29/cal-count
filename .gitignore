@@ -38,3 +38,12 @@ next-env.d.ts
 
 # git backup
 .git.backup/
+
+# prisma
+/lib/generated/prisma
+
+# database
+*.db
+*.db-journal
+/prisma/dev.db
+/prisma/dev.db-journal

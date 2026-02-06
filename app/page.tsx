@@ -20,7 +20,7 @@ import {
   type MacroGoals,
   type MealData,
   type MealType,
-} from "@/lib/storage";
+} from "@/lib/storageDb";
 import DaySummary from "./components/DaySummary";
 import MealSection from "./components/MealSection";
 import AddFoodForm from "./components/AddFoodForm";
@@ -45,8 +45,8 @@ export default function Home() {
   const [editingEntry, setEditingEntry] = useState<{ entry: FoodEntry; meal: MealType } | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  const loadDay = useCallback((date: string) => {
-    const data = getDayData(date);
+  const loadDay = useCallback(async (date: string) => {
+    const data = await getDayData(date);
     setMeals(data.meals);
     setGoalState(data.goal);
   }, []);
@@ -54,23 +54,33 @@ export default function Home() {
   useEffect(() => {
     setMounted(true);
     loadDay(currentDate);
-    setMacroGoalsState(getMacroGoals());
+    getMacroGoals().then(setMacroGoalsState);
   }, [currentDate, loadDay]);
 
-  const handleAddFood = (name: string, calories: number, meal: MealType, nutrition?: NutritionInfo) => {
-    const entry = addEntry(currentDate, name, calories, meal, nutrition);
-    setMeals((prev) => ({
-      ...prev,
-      [meal]: [entry, ...prev[meal]]
-    }));
+  const handleAddFood = async (name: string, calories: number, meal: MealType, nutrition?: NutritionInfo) => {
+    try {
+      const entry = await addEntry(currentDate, name, calories, meal, nutrition);
+      setMeals((prev) => ({
+        ...prev,
+        [meal]: [entry, ...prev[meal]]
+      }));
+    } catch (error) {
+      console.error("Error adding food:", error);
+      alert("เกิดข้อผิดพลาดในการเพิ่มรายการอาหาร");
+    }
   };
 
-  const handleDeleteFood = (id: string, meal: MealType) => {
-    deleteEntry(currentDate, id, meal);
-    setMeals((prev) => ({
-      ...prev,
-      [meal]: prev[meal].filter((e) => e.id !== id)
-    }));
+  const handleDeleteFood = async (id: string, meal: MealType) => {
+    try {
+      await deleteEntry(currentDate, id, meal);
+      setMeals((prev) => ({
+        ...prev,
+        [meal]: prev[meal].filter((e) => e.id !== id)
+      }));
+    } catch (error) {
+      console.error("Error deleting food:", error);
+      alert("เกิดข้อผิดพลาดในการลบรายการอาหาร");
+    }
   };
 
   const handleEditFood = (id: string, meal: MealType) => {
@@ -80,50 +90,55 @@ export default function Home() {
     }
   };
 
-  const handleSaveEdit = (name: string, calories: number, newMeal: MealType, nutrition?: NutritionInfo) => {
+  const handleSaveEdit = async (name: string, calories: number, newMeal: MealType, nutrition?: NutritionInfo) => {
     if (!editingEntry) return;
 
-    const result = updateEntry(currentDate, editingEntry.entry.id, editingEntry.meal, {
-      name,
-      calories,
-      nutrition,
-      newMeal,
-    });
-
-    if (result) {
-      const { entry: updatedEntry, oldMeal, newMeal: finalMeal } = result;
-      
-      setMeals((prev) => {
-        if (oldMeal === finalMeal) {
-          // Same meal, just update
-          return {
-            ...prev,
-            [oldMeal]: prev[oldMeal].map((e) =>
-              e.id === updatedEntry.id ? updatedEntry : e
-            ),
-          };
-        } else {
-          // Moved to different meal
-          return {
-            ...prev,
-            [oldMeal]: prev[oldMeal].filter((e) => e.id !== updatedEntry.id),
-            [finalMeal]: [updatedEntry, ...prev[finalMeal]],
-          };
-        }
+    try {
+      const result = await updateEntry(currentDate, editingEntry.entry.id, editingEntry.meal, {
+        name,
+        calories,
+        nutrition,
+        newMeal,
       });
-    }
 
-    setEditingEntry(null);
+      if (result) {
+        const { entry: updatedEntry, oldMeal, newMeal: finalMeal } = result;
+        
+        setMeals((prev) => {
+          if (oldMeal === finalMeal) {
+            // Same meal, just update
+            return {
+              ...prev,
+              [oldMeal]: prev[oldMeal].map((e) =>
+                e.id === updatedEntry.id ? updatedEntry : e
+              ),
+            };
+          } else {
+            // Moved to different meal
+            return {
+              ...prev,
+              [oldMeal]: prev[oldMeal].filter((e) => e.id !== updatedEntry.id),
+              [finalMeal]: [updatedEntry, ...prev[finalMeal]],
+            };
+          }
+        });
+      }
+
+      setEditingEntry(null);
+    } catch (error) {
+      console.error("Error updating food:", error);
+      alert("เกิดข้อผิดพลาดในการแก้ไขรายการอาหาร");
+    }
   };
 
-  const handleGoalSave = (newGoal: number) => {
-    saveGoal(newGoal);
+  const handleGoalSave = async (newGoal: number) => {
+    await saveGoal(newGoal);
     setGoalState(newGoal);
     setShowGoalSetter(false);
   };
 
-  const handleMacroGoalsSave = (newGoals: MacroGoals) => {
-    saveMacroGoals(newGoals);
+  const handleMacroGoalsSave = async (newGoals: MacroGoals) => {
+    await saveMacroGoals(newGoals);
     setMacroGoalsState(newGoals);
     setShowMacroGoalsSetter(false);
   };

@@ -1,17 +1,36 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getInBodyHistory, type InBodyAnalysis } from "@/lib/storage";
+import { getInBodyHistory, type InBodyAnalysis } from "@/lib/storageDb";
 
 export default function LatestInBodyCard() {
   const [latestInBody, setLatestInBody] = useState<InBodyAnalysis | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const history = getInBodyHistory();
-    if (history.length > 0) {
-      setLatestInBody(history[0]);
-    }
+    const loadLatestInBody = async () => {
+      setLoading(true);
+      try {
+        const history = await getInBodyHistory();
+        if (history.length > 0) {
+          setLatestInBody(history[0]);
+        }
+      } catch (error) {
+        console.error("Error loading latest InBody:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadLatestInBody();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="bg-surface border border-glass-border rounded-3xl p-5 mb-4 shadow-sm flex items-center justify-center h-40">
+        <div className="w-6 h-6 border-2 border-ember/30 border-t-ember rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!latestInBody) {
     return null;

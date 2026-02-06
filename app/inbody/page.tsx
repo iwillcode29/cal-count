@@ -9,7 +9,7 @@ import {
   type InBodyAnalysis,
   type InBodyAnalysisData,
   type SegmentRating,
-} from "@/lib/storage";
+} from "@/lib/storageDb";
 
 // ─── Helper Components ──────────────────────────────────────────
 
@@ -251,11 +251,14 @@ export default function InBodyPage() {
 
   useEffect(() => {
     setMounted(true);
-    const h = getInBodyHistory();
-    setHistory(h);
-    if (h.length > 0) {
-      setSelectedAnalysis(h[0]);
-    }
+    const loadHistory = async () => {
+      const h = await getInBodyHistory();
+      setHistory(h);
+      if (h.length > 0) {
+        setSelectedAnalysis(h[0]);
+      }
+    };
+    loadHistory();
   }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -282,12 +285,12 @@ export default function InBodyPage() {
       if (!response.ok) throw new Error("Failed to analyze");
 
       const result = await response.json();
-      const saved = saveInBodyAnalysis({
+      const saved = await saveInBodyAnalysis({
         recommendedCalories: result.recommendedCalories,
         analysis: result.analysis,
       });
 
-      const updatedHistory = getInBodyHistory();
+      const updatedHistory = await getInBodyHistory();
       setHistory(updatedHistory);
       setSelectedAnalysis(saved);
       setSelectedFile(null);
@@ -301,13 +304,18 @@ export default function InBodyPage() {
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("ต้องการลบข้อมูลนี้ใช่ไหม?")) return;
-    deleteInBodyAnalysis(id);
-    const updated = getInBodyHistory();
-    setHistory(updated);
-    if (selectedAnalysis?.id === id) {
-      setSelectedAnalysis(updated[0] || null);
+    try {
+      await deleteInBodyAnalysis(id);
+      const updated = await getInBodyHistory();
+      setHistory(updated);
+      if (selectedAnalysis?.id === id) {
+        setSelectedAnalysis(updated[0] || null);
+      }
+    } catch (error) {
+      console.error("Error deleting InBody analysis:", error);
+      alert("เกิดข้อผิดพลาดในการลบข้อมูล");
     }
   };
 
