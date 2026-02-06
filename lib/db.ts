@@ -18,22 +18,25 @@ function createPrismaClient() {
   const databaseUrl = process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL;
 
   if (!databaseUrl) {
-    // Local development without database - return a mock client
-    console.warn("⚠️  No DATABASE_URL found. Database operations will fail.");
-    console.warn("   Set DATABASE_URL in .env.local or use Vercel Postgres.");
+    // No database URL - use a dummy connection string for build
+    // This allows the build to succeed, but database operations will fail at runtime
+    console.warn("⚠️  No DATABASE_URL found. Database operations will fail at runtime.");
+    console.warn("   Add Vercel Postgres in Vercel Dashboard → Storage → Create Database");
+    
+    // Use a dummy postgres connection string with Neon adapter
+    // This satisfies Prisma v7's requirement for an adapter during build
+    const dummyUrl = "postgresql://user:pass@localhost:5432/db";
+    const adapter = new PrismaNeon({ connectionString: dummyUrl });
     
     return new PrismaClient({
+      adapter,
       log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
     });
   }
 
   // Production/Preview with Vercel Postgres
-  // Create Pool with proper config
-  const connectionString = databaseUrl;
-  const pool = new Pool({ connectionString });
-  
-  // PrismaNeon expects Pool config object, not Pool instance
-  const adapter = new PrismaNeon({ connectionString });
+  // PrismaNeon expects config object with connectionString
+  const adapter = new PrismaNeon({ connectionString: databaseUrl });
 
   return new PrismaClient({
     adapter,
