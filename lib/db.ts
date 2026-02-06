@@ -1,10 +1,16 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
-import { Pool } from "@neondatabase/serverless";
+import { Pool, neonConfig } from "@neondatabase/serverless";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
+
+// Configure Neon for Node.js environments (not Edge)
+if (process.env.NODE_ENV !== "production") {
+  // Dynamic import for ws in development
+  neonConfig.webSocketConstructor = require("ws");
+}
 
 // Create Prisma Client with Neon adapter for Prisma v7
 function createPrismaClient() {
@@ -22,8 +28,12 @@ function createPrismaClient() {
   }
 
   // Production/Preview with Vercel Postgres
-  const pool = new Pool({ connectionString: databaseUrl });
-  const adapter = new PrismaNeon(pool);
+  // Create Pool with proper config
+  const connectionString = databaseUrl;
+  const pool = new Pool({ connectionString });
+  
+  // PrismaNeon expects Pool config object, not Pool instance
+  const adapter = new PrismaNeon({ connectionString });
 
   return new PrismaClient({
     adapter,
