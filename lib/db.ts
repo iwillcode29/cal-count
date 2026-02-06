@@ -1,15 +1,20 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaNeon } from "@prisma/adapter-neon";
+import { Pool, neonConfig } from "@neondatabase/serverless";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-// Create Prisma Client
-// Supports both Prisma Accelerate and direct connections
+// Configure Neon for Node.js environments
+if (typeof WebSocket === "undefined") {
+  neonConfig.webSocketConstructor = require("ws");
+}
+
+// Create Prisma Client with Neon adapter
 function createPrismaClient() {
-  // Check if we have a database URL (production/preview)
+  // Use direct Postgres URL (not Accelerate URL)
   const databaseUrl = 
-    process.env.PRISMA_DATABASE_URL || 
     process.env.POSTGRES_URL ||
     process.env.DATABASE_URL;
 
@@ -17,22 +22,17 @@ function createPrismaClient() {
     // No database URL - use fallback for build
     console.warn("⚠️  No DATABASE_URL found. Database operations will fail at runtime.");
     
+    // Return basic client for build
     return new PrismaClient({
       log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
     });
   }
 
-  // Prisma Accelerate URL (prisma+postgres://)
-  if (databaseUrl.startsWith("prisma+postgres://")) {
-    return new PrismaClient({
-      datasourceUrl: databaseUrl,
-      log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
-    });
-  }
+  // Create Neon adapter for direct Postgres connection
+  const adapter = new PrismaNeon({ connectionString: databaseUrl });
 
-  // Direct Postgres connection
   return new PrismaClient({
-    datasourceUrl: databaseUrl,
+    adapter,
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
 }
