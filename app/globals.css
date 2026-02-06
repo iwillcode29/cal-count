@@ -1,0 +1,215 @@
+@import "tailwindcss";
+
+@theme {
+  /* Base colors */
+  --color-midnight: #FAFAF7;
+  --color-cream: #FAFAF7;
+  --color-surface: #FFFFFF;
+  --color-surface-light: #F5F4F0;
+  --color-surface-lighter: #EDECE7;
+  
+  /* Primary colors */
+  --color-ember: #D4725C;
+  --color-ember-dim: #BE6350;
+  --color-ember-glow: rgba(212, 114, 92, 0.2);
+  --color-mint: #4CAF82;
+  --color-mint-dim: #3D9A70;
+  --color-mint-glow: rgba(76, 175, 130, 0.15);
+  
+  /* Semantic colors */
+  --color-danger: #D94B4B;
+  --color-danger-glow: rgba(217, 75, 75, 0.15);
+  --color-coral: #D94B4B;
+  --color-forest: #4CAF82;
+  --color-forest-dark: #3D9A70;
+  
+  /* Text colors */
+  --color-charcoal: #2C2A25;
+  --color-charcoal-light: #8A857C;
+  --color-text: #2C2A25;
+  --color-text-dim: #8A857C;
+  --color-text-muted: #B8B3A8;
+  
+  /* Glass effect */
+  --color-glass: rgba(255, 255, 255, 0.85);
+  --color-glass-hover: rgba(255, 255, 255, 1);
+  --color-glass-border: #E8E6E0;
+  --color-glass-border-hover: #D5D2CA;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: 'Chakra Petch', sans-serif;
+  background: #FAFAF7;
+  color: var(--color-text);
+  min-height: 100dvh;
+}
+
+/* Number font */
+.font-number {
+  font-family: 'Space Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Card ──────────────────────────── */
+.glass-card {
+  background: var(--color-glass);
+  border: 1px solid var(--color-glass-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.glass-card:hover {
+  background: var(--color-glass-hover);
+  border-color: var(--color-glass-border-hover);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* ── Ring shadow ─────────────────────── */
+.ring-glow-mint {
+  filter: drop-shadow(0 2px 8px var(--color-mint-glow));
+}
+.ring-glow-ember {
+  filter: drop-shadow(0 2px 8px var(--color-ember-glow));
+}
+.ring-glow-danger {
+  filter: drop-shadow(0 2px 8px var(--color-danger-glow));
+}
+
+/* ── Animations ──────────────────────── */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slide-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+    max-height: 120px;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(50px);
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-out {
+  animation: slide-out 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── Detail expand (grid trick) ──────── */
+.detail-expand {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.detail-expand.open {
+  grid-template-rows: 1fr;
+}
+
+.detail-expand > div {
+  overflow: hidden;
+}
+
+/* ── Scrollbar ───────────────────────── */
+::-webkit-scrollbar {
+  width: 3px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-lighter);
+  border-radius: 2px;
+}
+
+/* ── Loading shimmer ─────────────────── */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-light) 25%,
+    var(--color-surface) 50%,
+    var(--color-surface-light) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* ── Input styles ────────────────────── */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
