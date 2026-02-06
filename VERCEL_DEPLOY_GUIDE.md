@@ -6,9 +6,10 @@
 
 ### สิ่งที่เปลี่ยน:
 - ✅ เปลี่ยน Prisma schema จาก SQLite → PostgreSQL
-- ✅ ลบ libsql adapter (ไม่ต้องใช้แล้ว)
+- ✅ ใช้ Neon adapter สำหรับ Prisma v7 + Vercel Postgres
 - ✅ เพิ่ม postinstall script สำหรับ Vercel
 - ✅ อัปเดต environment variables config
+- ✅ รองรับทั้ง local dev และ production
 
 ## 📋 Step-by-Step Deployment
 
