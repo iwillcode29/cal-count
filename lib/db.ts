@@ -15,7 +15,11 @@ if (process.env.NODE_ENV !== "production") {
 // Create Prisma Client with Neon adapter for Prisma v7
 function createPrismaClient() {
   // Check if we have a database URL (production/preview)
-  const databaseUrl = process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL;
+  // Support multiple env var names for different Postgres providers
+  const databaseUrl = 
+    process.env.POSTGRES_PRISMA_URL || 
+    process.env.PRISMA_DATABASE_URL || 
+    process.env.DATABASE_URL;
 
   if (!databaseUrl) {
     // No database URL - use a dummy connection string for build
