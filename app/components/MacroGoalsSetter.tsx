@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import type { MacroGoals } from "@/lib/storage";
+import type { MacroGoals, InBodyAnalysis } from "@/lib/storage";
+import InBodyUpload from "./InBodyUpload";
+import InBodyHistory from "./InBodyHistory";
 
 interface MacroGoalsSetterProps {
   currentGoals: MacroGoals;
-  onSave: (goals: MacroGoals) => void;
+  currentCalorieGoal: number;
+  onSave: (goals: MacroGoals, calorieGoal: number) => void;
   onClose: () => void;
 }
 
@@ -32,22 +35,29 @@ const PRESETS = [
   },
 ];
 
-export default function MacroGoalsSetter({ currentGoals, onSave, onClose }: MacroGoalsSetterProps) {
+export default function MacroGoalsSetter({ currentGoals, currentCalorieGoal, onSave, onClose }: MacroGoalsSetterProps) {
   const [protein, setProtein] = useState(String(currentGoals.protein));
   const [carbs, setCarbs] = useState(String(currentGoals.carbs));
   const [fat, setFat] = useState(String(currentGoals.fat));
+  const [calorieGoal, setCalorieGoal] = useState(String(currentCalorieGoal));
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
-  const proteinRef = useRef<HTMLInputElement>(null);
+  const [showInBodyUpload, setShowInBodyUpload] = useState(false);
+  const [showInBodyHistory, setShowInBodyHistory] = useState(false);
+  const calorieRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    proteinRef.current?.focus();
-  }, []);
+    if (!showInBodyUpload && !showInBodyHistory) {
+      calorieRef.current?.select();
+    }
+  }, [showInBodyUpload, showInBodyHistory]);
 
   const handlePresetSelect = (preset: typeof PRESETS[0]) => {
     setProtein(String(preset.goals.protein));
     setCarbs(String(preset.goals.carbs));
     setFat(String(preset.goals.fat));
     setSelectedPreset(preset.name);
+    const estimatedCalories = preset.goals.protein * 4 + preset.goals.carbs * 4 + preset.goals.fat * 9;
+    setCalorieGoal(String(estimatedCalories));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -55,14 +65,24 @@ export default function MacroGoalsSetter({ currentGoals, onSave, onClose }: Macr
     const proteinNum = parseInt(protein, 10);
     const carbsNum = parseInt(carbs, 10);
     const fatNum = parseInt(fat, 10);
+    const calorieNum = parseInt(calorieGoal, 10);
 
-    if (proteinNum > 0 && carbsNum > 0 && fatNum > 0) {
-      onSave({
-        protein: proteinNum,
-        carbs: carbsNum,
-        fat: fatNum,
-      });
+    if (proteinNum > 0 && carbsNum > 0 && fatNum > 0 && calorieNum > 0) {
+      onSave(
+        { protein: proteinNum, carbs: carbsNum, fat: fatNum },
+        calorieNum,
+      );
     }
+  };
+
+  const handleInBodyAnalysis = (calories: number) => {
+    setCalorieGoal(String(calories));
+    setShowInBodyUpload(false);
+  };
+
+  const handleHistoryApply = (calories: number, _analysis: InBodyAnalysis) => {
+    setCalorieGoal(String(calories));
+    setShowInBodyHistory(false);
   };
 
   const totalCalories = (
@@ -70,6 +90,24 @@ export default function MacroGoalsSetter({ currentGoals, onSave, onClose }: Macr
     parseInt(carbs || "0") * 4 +
     parseInt(fat || "0") * 9
   );
+
+  if (showInBodyUpload) {
+    return (
+      <InBodyUpload
+        onAnalysisComplete={handleInBodyAnalysis}
+        onClose={() => setShowInBodyUpload(false)}
+      />
+    );
+  }
+
+  if (showInBodyHistory) {
+    return (
+      <InBodyHistory
+        onClose={() => setShowInBodyHistory(false)}
+        onApplyAnalysis={handleHistoryApply}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={onClose}>
@@ -80,8 +118,8 @@ export default function MacroGoalsSetter({ currentGoals, onSave, onClose }: Macr
       >
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-lg font-bold text-charcoal">เป้าหมายโภชนาการ</h3>
-            <p className="text-xs text-charcoal-light mt-1">กรัมต่อวันที่ต้องการ</p>
+            <h3 className="text-lg font-bold text-charcoal">ตั้งเป้าหมาย</h3>
+            <p className="text-xs text-charcoal-light mt-1">แคลอรี่และโภชนาการต่อวัน</p>
           </div>
           <button
             onClick={onClose}
@@ -91,6 +129,53 @@ export default function MacroGoalsSetter({ currentGoals, onSave, onClose }: Macr
               <path d="M4 4l8 8M12 4l-8 8" />
             </svg>
           </button>
+        </div>
+
+        {/* Calorie Goal */}
+        <div className="mb-5">
+          <label className="text-xs text-charcoal-light mb-1.5 block font-medium">
+            เป้าหมายแคลอรี่ต่อวัน
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              ref={calorieRef}
+              type="number"
+              value={calorieGoal}
+              onChange={(e) => setCalorieGoal(e.target.value)}
+              inputMode="numeric"
+              className="flex-1 px-4 py-2.5 bg-white rounded-xl text-sm font-number text-center focus:outline-none focus:ring-2 focus:ring-forest/30 shadow-sm border border-charcoal/10"
+            />
+            <span className="text-xs text-charcoal-light w-8">แคล</span>
+          </div>
+        </div>
+
+        {/* InBody Buttons */}
+        <div className="flex gap-2 mb-6">
+          <button
+            type="button"
+            onClick={() => setShowInBodyUpload(true)}
+            className="flex-1 py-2 px-3 bg-ember/10 text-ember border border-ember/20 rounded-xl text-xs font-medium hover:bg-ember/20 transition-all flex items-center justify-center gap-1.5"
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2M11 5l-3-3m0 0L5 5m3-3v9" />
+            </svg>
+            อัพโหลด InBody
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowInBodyHistory(true)}
+            className="flex-1 py-2 px-3 bg-surface-light text-text-dim border border-glass-border rounded-xl text-xs font-medium hover:bg-surface-lighter hover:text-text transition-all flex items-center justify-center gap-1.5"
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M8 14A6 6 0 108 2a6 6 0 000 12z" />
+              <path d="M8 4v4l2 2" />
+            </svg>
+            ประวัติ InBody
+          </button>
+        </div>
+
+        <div className="border-t border-charcoal/10 pt-5 mb-4">
+          <p className="text-xs text-charcoal-light font-medium mb-3">เป้าหมายโภชนาการ (กรัมต่อวัน)</p>
         </div>
 
         {/* Presets */}
@@ -130,7 +215,6 @@ export default function MacroGoalsSetter({ currentGoals, onSave, onClose }: Macr
             </label>
             <div className="flex items-center gap-2">
               <input
-                ref={proteinRef}
                 type="number"
                 value={protein}
                 onChange={(e) => {
@@ -184,7 +268,7 @@ export default function MacroGoalsSetter({ currentGoals, onSave, onClose }: Macr
 
           {/* Summary */}
           <div className="bg-forest/5 rounded-xl p-3 border border-forest/20">
-            <div className="text-xs text-charcoal-light mb-1">แคลอรี่โดยประมาณ</div>
+            <div className="text-xs text-charcoal-light mb-1">แคลอรี่จากโภชนาการ</div>
             <div className="text-2xl font-bold text-forest font-number">
               {totalCalories.toLocaleString()}
             </div>

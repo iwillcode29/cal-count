@@ -24,7 +24,6 @@ import {
 import DaySummary from "./components/DaySummary";
 import MealSection from "./components/MealSection";
 import AddFoodForm from "./components/AddFoodForm";
-import GoalSetter from "./components/GoalSetter";
 import HistoryView from "./components/HistoryView";
 import NutritionDashboard from "./components/NutritionDashboard";
 import MacroGoalsSetter from "./components/MacroGoalsSetter";
@@ -32,13 +31,13 @@ import MacroAlert from "./components/MacroAlert";
 import LatestInBodyCard from "./components/LatestInBodyCard";
 import ExportModal from "./components/ExportModal";
 import EditFoodModal from "./components/EditFoodModal";
+import LoadingSkeleton from "./components/LoadingSkeleton";
 
 export default function Home() {
   const [currentDate, setCurrentDate] = useState(getToday());
   const [meals, setMeals] = useState<MealData>({ breakfast: [], lunch: [], dinner: [] });
   const [goal, setGoalState] = useState(2000);
   const [macroGoals, setMacroGoalsState] = useState<MacroGoals>({ protein: 150, carbs: 250, fat: 65 });
-  const [showGoalSetter, setShowGoalSetter] = useState(false);
   const [showMacroGoalsSetter, setShowMacroGoalsSetter] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -131,15 +130,11 @@ export default function Home() {
     }
   };
 
-  const handleGoalSave = async (newGoal: number) => {
-    await saveGoal(newGoal);
-    setGoalState(newGoal);
-    setShowGoalSetter(false);
-  };
-
-  const handleMacroGoalsSave = async (newGoals: MacroGoals) => {
+  const handleMacroGoalsSave = async (newGoals: MacroGoals, calorieGoal: number) => {
     await saveMacroGoals(newGoals);
+    await saveGoal(calorieGoal);
     setMacroGoalsState(newGoals);
+    setGoalState(calorieGoal);
     setShowMacroGoalsSetter(false);
   };
 
@@ -174,11 +169,7 @@ export default function Home() {
   const totalNutrition = getTotalNutrition(allEntries);
 
   if (!mounted) {
-    return (
-      <div className="flex items-center justify-center min-h-dvh">
-        <div className="w-8 h-8 border-2 border-ember/30 border-t-ember rounded-full animate-spin" />
-      </div>
-    );
+    return <LoadingSkeleton />;
   }
 
   return (
@@ -191,7 +182,7 @@ export default function Home() {
         entriesCount={allEntries.length}
         onPrevDay={handlePrevDay}
         onNextDay={handleNextDay}
-        onGoalClick={() => setShowGoalSetter(true)}
+        onGoalClick={() => setShowMacroGoalsSetter(true)}
       />
 
       {/* Main Content with Sidebar */}
@@ -283,24 +274,16 @@ export default function Home() {
         </div> */}
       </div>
 
-      {/* Add food form — only shown for today */}
-      {isToday && (
-        <div className="sticky bottom-4">
-          <AddFoodForm onAdd={handleAddFood} />
-        </div>
-      )}
+      {/* Add food form — shown for today and past dates */}
+      <div className="sticky bottom-4">
+        <AddFoodForm onAdd={handleAddFood} />
+      </div>
 
       {/* Modals */}
-      {showGoalSetter && (
-        <GoalSetter
-          currentGoal={goal}
-          onSave={handleGoalSave}
-          onClose={() => setShowGoalSetter(false)}
-        />
-      )}
       {showMacroGoalsSetter && (
         <MacroGoalsSetter
           currentGoals={macroGoals}
+          currentCalorieGoal={goal}
           onSave={handleMacroGoalsSave}
           onClose={() => setShowMacroGoalsSetter(false)}
         />
