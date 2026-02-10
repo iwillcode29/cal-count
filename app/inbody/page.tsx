@@ -247,15 +247,21 @@ export default function InBodyPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [segmentMode, setSegmentMode] = useState<"lean" | "fat">("lean");
   const [mounted, setMounted] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setMounted(true);
     const loadHistory = async () => {
-      const h = await getInBodyHistory();
-      setHistory(h);
-      if (h.length > 0) {
-        setSelectedAnalysis(h[0]);
+      setLoadingHistory(true);
+      try {
+        const h = await getInBodyHistory();
+        setHistory(h);
+        if (h.length > 0) {
+          setSelectedAnalysis(h[0]);
+        }
+      } finally {
+        setLoadingHistory(false);
       }
     };
     loadHistory();
@@ -406,8 +412,79 @@ export default function InBodyPage() {
         </div>
       )}
 
+      {/* ── Loading State ─────────────────────────── */}
+      {loadingHistory && !previewUrl && (
+        <div className="space-y-4 animate-fade-in">
+          {/* History selector skeleton */}
+          <div className="space-y-2">
+            <div className="shimmer h-3 w-24 rounded-full" />
+            <div className="flex gap-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="shimmer h-14 w-24 rounded-2xl shrink-0" />
+              ))}
+            </div>
+          </div>
+
+          {/* Score card skeleton */}
+          <div className="glass-card rounded-3xl p-6 space-y-5">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="shimmer h-3 w-20 rounded-full" />
+                <div className="shimmer h-3 w-28 rounded-full" />
+              </div>
+              <div className="shimmer h-8 w-8 rounded-full" />
+            </div>
+            <div className="flex items-center gap-6">
+              <div className="shimmer rounded-full" style={{ width: 140, height: 140 }} />
+              <div className="flex-1 grid grid-cols-2 gap-2.5">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="bg-surface-light rounded-xl p-3 space-y-2">
+                    <div className="shimmer h-2.5 w-12 rounded-full" />
+                    <div className="shimmer h-5 w-16 rounded-lg" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Body composition skeleton */}
+          <div className="glass-card rounded-3xl p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="shimmer w-1.5 h-1.5 rounded-full" />
+              <div className="shimmer h-4 w-28 rounded-full" />
+            </div>
+            <div className="shimmer h-6 w-full rounded-xl" />
+            <div className="flex gap-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex items-center gap-1.5">
+                  <div className="shimmer w-2.5 h-2.5 rounded" />
+                  <div className="shimmer h-2.5 w-14 rounded-full" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Gauge skeletons */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[1, 2].map((i) => (
+              <div key={i} className="glass-card rounded-3xl p-5 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="shimmer w-1.5 h-1.5 rounded-full" />
+                  <div className="shimmer h-3 w-8 rounded-full" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="shimmer h-3 w-20 rounded-full" />
+                  <div className="shimmer h-4 w-12 rounded-full" />
+                </div>
+                <div className="shimmer h-2.5 w-full rounded-full" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── History Selector ─────────────────────── */}
-      {history.length > 0 && (
+      {!loadingHistory && history.length > 0 && (
         <div className="space-y-2">
           <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold">ประวัติการวิเคราะห์</p>
           <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
@@ -438,7 +515,7 @@ export default function InBodyPage() {
       )}
 
       {/* ── No Data State ────────────────────────── */}
-      {!selectedAnalysis && !previewUrl && (
+      {!loadingHistory && !selectedAnalysis && !previewUrl && (
         <div className="glass-card rounded-3xl p-10 text-center space-y-4 animate-slide-up">
           <div className="w-16 h-16 rounded-full glass-card flex items-center justify-center mx-auto">
             <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-text-muted">

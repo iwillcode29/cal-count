@@ -183,7 +183,7 @@ export default function NutritionDashboard({ nutrition, goals, onGoalsClick }: N
       )}
 
       {/* Goals setting button */}
-      <button
+      {/* <button
         onClick={onGoalsClick}
         className="w-full glass-card rounded-xl px-4 py-2.5 text-[11px] text-text-dim hover:text-ember transition-colors tracking-wide group flex items-center justify-center gap-2"
       >
@@ -192,7 +192,7 @@ export default function NutritionDashboard({ nutrition, goals, onGoalsClick }: N
           <path d="M8 5v6M5 8h6" />
         </svg>
         <span>ตั้งเป้าหมายโภชนาการ</span>
-      </button>
+      </button> */}
     </div>
   );
 }

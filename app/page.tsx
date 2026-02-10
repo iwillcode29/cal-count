@@ -43,11 +43,17 @@ export default function Home() {
   const [showExportModal, setShowExportModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState<{ entry: FoodEntry; meal: MealType } | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const loadDay = useCallback(async (date: string) => {
-    const data = await getDayData(date);
-    setMeals(data.meals);
-    setGoalState(data.goal);
+    setLoading(true);
+    try {
+      const data = await getDayData(date);
+      setMeals(data.meals);
+      setGoalState(data.goal);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -174,6 +180,14 @@ export default function Home() {
 
   return (
     <>
+      {/* Loading overlay for date switching */}
+      {loading && mounted && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
+          <div className="w-8 h-8 border-2 border-ember/30 border-t-ember rounded-full animate-spin" />
+        </div>
+      )}
+
+      <div className={`transition-opacity duration-200 ${loading && mounted ? 'opacity-40 pointer-events-none' : ''}`}>
       <DaySummary
         date={currentDate}
         totalCalories={totalCalories}
@@ -277,6 +291,8 @@ export default function Home() {
       {/* Add food form — shown for today and past dates */}
       <div className="sticky bottom-4">
         <AddFoodForm onAdd={handleAddFood} />
+      </div>
+
       </div>
 
       {/* Modals */}
